@@ -14,3 +14,19 @@ import:
   - bcrypt
 - package: github.com/dgrijalva/jwt-go
   version: v3.0.0
+- package: go.uber.org/zap
+  version: v1.4.0
+- package: github.com/pkg/errors
+  version: v0.8.0
+- package: github.com/uber/jaeger-client-go
+  version: v2.6.0
+  subpackages:
+  - config
+- package: github.com/opentracing/opentracing-go
+  version: v1.0.2
+- package: github.com/asaskevich/govalidator
+  version: v6
+- package: github.com/prometheus/client_golang
+  version: v0.8.0
+  subpackages:
+  - prometheus/promhttp

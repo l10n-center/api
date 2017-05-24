@@ -5,3 +5,9 @@ services:
     image: postgres:9.6
     ports:
       - "5432:5432"
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "5775:5775/udp"
+      - "16686:16686"
