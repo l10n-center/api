@@ -9,6 +9,7 @@ import (
 	"github.com/pressly/chi/middleware"
 )
 
+// add tracing span to context and it's id in response header
 func tracingMiddleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

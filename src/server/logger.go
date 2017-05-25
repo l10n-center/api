@@ -38,6 +38,7 @@ func init() {
 	prometheus.MustRegister(responseDurationM)
 }
 
+// log start and end of request and store metrics of request
 func loggerMiddleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
