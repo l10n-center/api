@@ -51,13 +51,13 @@ func main() {
 		cancel()
 	}()
 	if err := s.Shutdown(ctx); err != nil {
-		l.Fatal(err)
+		l.Fatal(err.Error())
 	}
 	l.Info("stopped")
 
 }
 
-func initLogger() *zap.SugaredLogger {
+func initLogger() *zap.Logger {
 	var (
 		l   *zap.Logger
 		err error
@@ -72,14 +72,14 @@ func initLogger() *zap.SugaredLogger {
 	}
 	zap.ReplaceGlobals(l)
 
-	return l.Sugar()
+	return l
 }
 
-func initTracing(l *zap.SugaredLogger) io.Closer {
+func initTracing(l *zap.Logger) io.Closer {
 	JAEGER := os.Getenv("JAEGER")
 	if len(JAEGER) == 0 {
 		JAEGER = "localhost:5775"
-		l.Infof("jaeger is not set, use default (%s)", JAEGER)
+		l.Sugar().Infof("jaeger is not set, use default (%s)", JAEGER)
 	}
 
 	jcfg := jaegerClientConfig.Configuration{
@@ -93,22 +93,22 @@ func initTracing(l *zap.SugaredLogger) io.Closer {
 	}
 	closer, err := jcfg.InitGlobalTracer("l10n-center/api")
 	if err != nil {
-		l.Panic(err)
+		l.Fatal(err.Error())
 	}
 
 	return closer
 }
 
-func initDB(l *zap.SugaredLogger) *sql.DB {
+func initDB(l *zap.Logger) *sql.DB {
 	DBURL := os.Getenv("DB")
 	if len(DBURL) == 0 {
 		DBURL = "postgres://postgres@localhost:5432/postgres?sslmode=disable"
-		l.Warnf("db is not set, use default (%s)", DBURL)
+		l.Sugar().Warnf("db is not set, use default (%s)", DBURL)
 	}
 	l.Info("connecting to db")
 	db, err := sql.Open("postgres", DBURL)
 	if err != nil {
-		l.Fatal(err)
+		l.Fatal(err.Error())
 	}
 
 	db.SetMaxIdleConns(4)
@@ -117,26 +117,26 @@ func initDB(l *zap.SugaredLogger) *sql.DB {
 	l.Info("migrating")
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
-		l.Fatal(err)
+		l.Fatal(err.Error())
 	}
 	m, err := migrate.NewWithDatabaseInstance(
 		"file://./migration",
 		"postgres", driver)
 	if err != nil {
-		l.Fatal(err)
+		l.Fatal(err.Error())
 	}
 	if err := m.Up(); err != nil {
 		if err == migrate.ErrNoChange {
-			l.Info(err)
+			l.Info(err.Error())
 		} else {
-			l.Fatal(err)
+			l.Fatal(err.Error())
 		}
 	}
 
 	return db
 }
 
-func initServer(l *zap.SugaredLogger, db *sql.DB) *http.Server {
+func initServer(l *zap.Logger, db *sql.DB) *http.Server {
 	SECRET := os.Getenv("SECRET")
 	if len(SECRET) == 0 {
 		l.Warn("secret is not set, generating random")
@@ -148,7 +148,7 @@ func initServer(l *zap.SugaredLogger, db *sql.DB) *http.Server {
 	BIND := os.Getenv("BIND")
 	if len(BIND) == 0 {
 		BIND = "0.0.0.0:3000"
-		l.Infof("bind not set, use default (%s)", BIND)
+		l.Sugar().Infof("bind not set, use default (%s)", BIND)
 	}
 	r := server.NewRouter(db, []byte(SECRET))
 

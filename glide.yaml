@@ -30,3 +30,9 @@ import:
   version: v0.8.0
   subpackages:
   - prometheus/promhttp
+testImport:
+- package: github.com/stretchr/testify
+  version: v1.1.4
+  subpackages:
+  - assert
+  - require

@@ -22,8 +22,9 @@ type tokenCtxKey struct{}
 
 type claims struct {
 	jwt.StandardClaims
-	Email string     `json:"email"`
-	Role  model.Role `json:"role"`
+	UserID int32      `json:"userId"`
+	Email  string     `json:"email"`
+	Role   model.Role `json:"role"`
 }
 
 func (s *server) authMiddleware() func(http.Handler) http.Handler {
@@ -47,7 +48,7 @@ func (s *server) authMiddleware() func(http.Handler) http.Handler {
 				if err != nil {
 					l.Error(err.Error())
 				} else if token.Valid {
-					c := token.Claims.(claims)
+					c := token.Claims.(*claims)
 					sp.SetTag("claims", c)
 					ctx = context.WithValue(r.Context(), tokenCtxKey{}, token)
 				}
@@ -60,25 +61,26 @@ func (s *server) authMiddleware() func(http.Handler) http.Handler {
 	}
 }
 
-func createToken(ctx context.Context, s *server, email string, role *model.Role) (string, error) {
+func createToken(ctx context.Context, s *server, id int32, u *model.User) (string, error) {
 	c := claims{
-		Email: email,
+		UserID: id,
 	}
 	c.ExpiresAt = time.Now().AddDate(0, 0, 14).Unix()
-	if role == nil {
+	if u == nil {
 		err := traceDB(ctx, "getRole", func() error {
 			return s.qb.
-				Select("role").
+				Select("email, role").
 				From("public.user").
-				Where("email = ?", email).
+				Where("id = ?", id).
 				QueryRow().
-				Scan(&c.Role)
+				Scan(&c.Email, &c.Role)
 		})
 		if err != nil {
 			return "", errors.Wrap(err, "role query")
 		}
 	} else {
-		c.Role = *role
+		c.Email = u.Email
+		c.Role = u.Role
 	}
 	t := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
 
@@ -128,7 +130,7 @@ func (s *server) authCheck() http.HandlerFunc {
 			return
 		}
 		c := t.Claims.(*claims)
-		st, err := createToken(ctx, s, c.Email, nil)
+		st, err := createToken(ctx, s, c.UserID, nil)
 		if err != nil {
 			l.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -179,7 +181,7 @@ func (s *server) authLogin() http.HandlerFunc {
 		}
 		u := &model.User{}
 		query, args, err := s.qb.
-			Select("role, passhash").
+			Select("id, email, role, passhash").
 			From("public.user").
 			Where("email = ?", rd.Email).
 			ToSql()
@@ -193,7 +195,7 @@ func (s *server) authLogin() http.HandlerFunc {
 			return s.db.Get(u, query, args...)
 		})
 		if err == sql.ErrNoRows {
-			l.Sugar().Infof("user '%s' is not found", rd.Email)
+			l.Sugar().Infof("user <%s> is not found", rd.Email)
 			w.WriteHeader(http.StatusBadRequest)
 			je.Encode([]string{"invalid email or password"})
 			return
@@ -209,8 +211,8 @@ func (s *server) authLogin() http.HandlerFunc {
 			je.Encode([]string{"invalid email or password"})
 			return
 		}
-		l.Sugar().Infof("user '%s' is logined", rd.Email)
-		st, err := createToken(ctx, s, rd.Email, &u.Role)
+		l.Sugar().Infof("user <%s> is logined", rd.Email)
+		st, err := createToken(ctx, s, u.ID, u)
 		if err != nil {
 			l.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -225,6 +227,89 @@ func (s *server) authLogin() http.HandlerFunc {
 
 func (s *server) authInit() http.HandlerFunc {
 	// create admin user
-	fn := func(w http.ResponseWriter, r *http.Request) {}
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		l := tracedLogger(ctx)
+
+		w.Header().Set("Content-Type", "application/json")
+		je := json.NewEncoder(w)
+
+		rd := &struct {
+			Email    string `json:"email" valid:"email,required"`
+			Password string `json:"password" valid:"required"`
+		}{}
+		if r.Header.Get("Content-Type") == "application/json" {
+			d := json.NewDecoder(r.Body)
+
+			if err := d.Decode(&rd); err != nil {
+				l.Info(err.Error())
+				w.WriteHeader(http.StatusBadRequest)
+				je.Encode([]string{err.Error()})
+				return
+			}
+		} else {
+			rd.Email = r.FormValue("email")
+			rd.Password = r.FormValue("password")
+		}
+		if ok, err := govalidator.ValidateStruct(rd); !ok {
+			l.Info(err.Error())
+			res := make([]string, len(err.(govalidator.Errors)))
+			for i, e := range err.(govalidator.Errors) {
+				res[i] = e.Error()
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			je.Encode(res)
+			return
+		}
+
+		passhash, err := bcrypt.GenerateFromPassword([]byte(rd.Password), bcrypt.DefaultCost)
+		if err != nil {
+			l.Error(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			je.Encode("something went wrong")
+			return
+		}
+
+		var userCount int
+
+		err = traceDB(ctx, "countUsers", func() error {
+			return s.qb.
+				Select("count(*)").
+				From("public.user").
+				Limit(1).
+				QueryRow().
+				Scan(&userCount)
+		})
+		if err != nil {
+			l.Error(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			je.Encode([]string{"something went wrong"})
+			return
+		}
+		if userCount > 0 {
+			l.Warn("admin already exists")
+			w.WriteHeader(http.StatusForbidden)
+			je.Encode("admin already exists")
+			return
+		}
+
+		err = traceDB(ctx, "createAdmin", func() error {
+			_, err := s.qb.
+				Insert("public.user").
+				Columns("email", "passhash", "role").
+				Values(rd.Email, passhash, model.RoleAdmin).
+				Exec()
+			return err
+		})
+		if err != nil {
+			l.Error(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			je.Encode("something went wrong")
+			return
+		}
+		l.Sugar().Infof("admin created with email <%s>", rd.Email)
+		w.WriteHeader(http.StatusCreated)
+		je.Encode("admin created")
+	}
 	return http.HandlerFunc(fn)
 }

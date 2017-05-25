@@ -6,6 +6,7 @@ import (
 
 // User of l10n-center
 type User struct {
+	ID         int32      `db:"id"`
 	Email      string     `db:"email"`
 	Passhash   []byte     `db:"passhash"`
 	Role       Role       `db:"role"`

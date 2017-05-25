@@ -1,0 +1,31 @@
+language: go
+
+go:
+  - 1.8
+
+os:
+  - linux
+
+sudo: false
+
+before_install:
+  - go get golang.org/x/tools/cmd/goimports
+  - go get github.com/Masterminds/glide
+  - go get github.com/mattn/goveralls
+
+before_script:
+  - glide install
+  - export DB="postgres://postgres@postgres:5432/%s?sslmode=disable"
+
+services:
+  - postgresql
+
+script:
+  - go test -test.cover -test.coverprofile=coverage.out -test.coverpkg=./src/... ./tests/
+  - go test -test.race ./tests/
+
+after_script:
+  - goveralls -coverprofile=coverage.out -service=travis-ci
+
+notifications:
+  email: true

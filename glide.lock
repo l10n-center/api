@@ -1,5 +1,5 @@
-hash: 158a46587c721829468ac013fbb623a3e977a2891b486025577313d6bb0158a0
-updated: 2017-05-24T22:30:26.743261532+04:00
+hash: b632369920d10b7cdfb02d05983b14e9808cdc7ec83ead0f16309fa6f7a112f6
+updated: 2017-05-25T13:23:22.052970842+04:00
 imports:
 - name: github.com/apache/thrift
   version: e41e47c2b4b2407bac525d203b281c63fb253978
@@ -52,6 +52,7 @@ imports:
 - name: github.com/pressly/chi
   version: e6033ea75479391a4bce3918fc119cad31e1cb30
   subpackages:
+  - docgen
   - middleware
 - name: github.com/prometheus/client_golang
   version: c5b7fccd204277076155f10851dad72b76a49317
@@ -111,4 +112,9 @@ imports:
   - context
 - name: gopkg.in/Masterminds/squirrel.v1
   version: 20f192218cf52a73397fa2df45bdda720f3e47c8
-testImports: []
+testImports:
+- name: github.com/stretchr/testify
+  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  subpackages:
+  - assert
+  - require
