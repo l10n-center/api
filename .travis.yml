@@ -14,7 +14,6 @@ before_install:
 
 before_script:
   - glide install
-  - export DB="postgres://postgres@postgres:5432/%s?sslmode=disable"
 
 services:
   - postgresql
