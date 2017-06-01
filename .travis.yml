@@ -10,20 +10,18 @@ sudo: false
 
 before_install:
   - go get github.com/Masterminds/glide
+  - go get github.com/go-playground/overalls
   - go get github.com/mattn/goveralls
 
 before_script:
   - glide install
 
-services:
-  - postgresql
-
 script:
-  - go test -test.cover -test.coverprofile=coverage.out -test.coverpkg=./src/... ./tests/
-  - go test -test.race ./tests/
+  - go vet $(go list ./... | grep -v /vendor/)
+  - overalls -project=github.com/l10n-center/api -- -race -v
 
 after_script:
-  - goveralls -coverprofile=coverage.out -service=travis-ci
+  - goveralls -coverprofile=overalls.coverprofile -service=travis-ci
 
 notifications:
   email: true

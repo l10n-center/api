@@ -1,12 +1,11 @@
-package server
+package middleware
 
 import (
-	"context"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/opentracing/opentracing-go"
+	"github.com/l10n-center/api/src/tracing"
 	"github.com/pressly/chi/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -38,11 +37,11 @@ func init() {
 	prometheus.MustRegister(responseDurationM)
 }
 
-// log start and end of request and store metrics of request
-func loggerMiddleware(next http.Handler) http.Handler {
+// Boundary log start and end of request and store metrics of request
+func Boundary(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		l := tracedLogger(ctx)
+		l := tracing.Logger(ctx)
 
 		l.Info(
 			"request start",
@@ -71,21 +70,4 @@ func loggerMiddleware(next http.Handler) http.Handler {
 	}
 
 	return http.HandlerFunc(fn)
-}
-
-func tracedLogger(ctx context.Context) *zap.Logger {
-	sp := opentracing.SpanFromContext(ctx)
-	l := zap.L()
-
-	tm := map[string]string{}
-	sp.Tracer().Inject(
-		sp.Context(),
-		opentracing.TextMap,
-		opentracing.TextMapCarrier(tm))
-
-	for k, v := range tm {
-		l = l.With(zap.String(k, v))
-	}
-
-	return l
 }

@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/l10n-center/api/src/server"
+	"github.com/l10n-center/api/src/controller"
 
 	"github.com/mattes/migrate"
 	"github.com/mattes/migrate/database/postgres"
@@ -150,7 +150,9 @@ func initServer(l *zap.Logger, db *sql.DB) *http.Server {
 		BIND = "0.0.0.0:3000"
 		l.Sugar().Infof("bind not set, use default (%s)", BIND)
 	}
-	r := server.NewRouter(db, []byte(SECRET))
+	r := controller.NewRouter(&controller.Config{
+		Secret: []byte(SECRET),
+	}, db)
 
 	return &http.Server{
 		Addr:     BIND,

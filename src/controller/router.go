@@ -1,9 +1,14 @@
-package server
+package controller
 
 import (
 	"database/sql"
 	"net/http"
 	"time"
+
+	"github.com/l10n-center/api/src/auth"
+	mw "github.com/l10n-center/api/src/middleware"
+	"github.com/l10n-center/api/src/model"
+	"github.com/l10n-center/api/src/tracing"
 
 	"github.com/pressly/chi"
 	"github.com/pressly/chi/docgen"
@@ -11,17 +16,24 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func (s *server) router() chi.Router {
+// Config of application
+type Config struct {
+	Secret []byte
+}
+
+func apiRouter(cfg *Config, store *model.Store) chi.Router {
 	r := chi.NewRouter()
 
-	r.Use(tracingMiddleware)
-	r.Use(s.authMiddleware())
-	r.Use(loggerMiddleware)
+	r.Use(tracing.Middleware)
+	r.Use(mw.Boundary)
+	r.Use(auth.Middleware(cfg.Secret))
 
 	r.Route("/auth", func(r chi.Router) {
-		r.Get("/", s.authCheck())
-		r.Post("/init", s.authInit())
-		r.Post("/login", s.authLogin())
+		r.Use(mw.JSONOnly)
+
+		r.Get("/", authCheck(cfg, store))
+		r.Post("/init", authInit(cfg, store))
+		r.Post("/login", authLogin(cfg, store))
 		// r.Post("/forget", s.authForget())
 		// r.Post("/reset/:token", s.authReset())
 	})
@@ -30,9 +42,9 @@ func (s *server) router() chi.Router {
 }
 
 // NewRouter api router
-func NewRouter(db *sql.DB, secret []byte) chi.Router {
-	s := newServer(db, secret)
-
+func NewRouter(cfg *Config, db *sql.DB) chi.Router {
+	store := model.NewStore(db)
+	api := apiRouter(cfg, store)
 	r := chi.NewRouter()
 
 	r.Use(middleware.RealIP)
@@ -43,10 +55,10 @@ func NewRouter(db *sql.DB, secret []byte) chi.Router {
 	r.Get("/doc", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(docgen.JSONRoutesDoc(s.router())))
+		w.Write([]byte(docgen.JSONRoutesDoc(api)))
 	})
 
-	r.Mount("/", s.router())
+	r.Mount("/", api)
 
 	return r
 }
