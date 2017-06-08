@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/l10n-center/api/src/tracing"
@@ -15,14 +14,11 @@ func JSONOnly(next http.Handler) http.Handler {
 		ctx := r.Context()
 		l := tracing.Logger(ctx)
 
-		w.Header().Set("Content-Type", "application/json")
-
 		switch r.Method {
 		case http.MethodPost, http.MethodPut, http.MethodPatch:
 			if r.Header.Get("Content-Type") != "application/json" {
-				l.Warn("not json request")
-				w.WriteHeader(http.StatusBadRequest)
-				json.NewEncoder(w).Encode("Content-Type not allowed. Use application/json")
+				l.Debug("not json request")
+				http.Error(w, "Content-Type not allowed. Use application/json", http.StatusBadRequest)
 
 				return
 			}

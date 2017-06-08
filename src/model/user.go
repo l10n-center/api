@@ -2,16 +2,21 @@ package model
 
 import (
 	"time"
+
+	"gopkg.in/mgo.v2/bson"
 )
 
 // User of l10n-center
+//
+// nolint: aligncheck
 type User struct {
-	ID         int32      `db:"id"`
-	Email      string     `db:"email"`
-	Passhash   []byte     `db:"passhash"`
-	Role       Role       `db:"role"`
-	ResetToken []byte     `db:"reset_token"`
-	CreatedAt  time.Time  `db:"created_at"`
-	UpdatedAt  time.Time  `db:"updated_at"`
-	DeletedAt  *time.Time `db:"deleted_at"`
+	ID         bson.ObjectId `bson:"_id"`
+	Email      string        `bson:"email"`
+	Passhash   []byte        `bson:"passhash"`
+	ResetToken []byte        `bson:"resetToken"`
+	IsAdmin    bool          `bson:"isAdmin"`
+	Permission Permission    `bson:"permission"`
+	CreatedAt  time.Time     `bson:"createdAt"`
+	UpdatedAt  time.Time     `bson:"updatedAt"`
+	DeletedAt  *time.Time    `bson:"deletedAt"`
 }

@@ -9,8 +9,9 @@ import (
 	"github.com/uber/jaeger-client-go"
 )
 
-// Middleware to add tracing span to context and it's id in response header
-func Middleware(next http.Handler) http.Handler {
+// WithSpan middleware add tracing span to context and it's id in response header
+func WithSpan(next http.Handler) http.Handler {
+	// WithSpan middleware add tracing span to context and it's id in response header
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		sp := opentracing.StartSpan(r.URL.Path)

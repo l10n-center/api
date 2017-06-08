@@ -1,50 +1,41 @@
-package controller
+package api
 
 import (
-	"database/sql"
 	"net/http"
 	"time"
 
 	"github.com/l10n-center/api/src/auth"
+	"github.com/l10n-center/api/src/config"
 	mw "github.com/l10n-center/api/src/middleware"
-	"github.com/l10n-center/api/src/model"
 	"github.com/l10n-center/api/src/tracing"
 
 	"github.com/pressly/chi"
 	"github.com/pressly/chi/docgen"
 	"github.com/pressly/chi/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.uber.org/zap"
 )
 
-// Config of application
-type Config struct {
-	Secret []byte
+// Store is a combined interface to model store
+type Store interface {
+	auth.Store
 }
 
-func apiRouter(cfg *Config, store *model.Store) chi.Router {
+func router(cfg *config.Config, store Store) chi.Router {
 	r := chi.NewRouter()
 
-	r.Use(tracing.Middleware)
+	r.Use(tracing.WithSpan)
 	r.Use(mw.Boundary)
-	r.Use(auth.Middleware(cfg.Secret))
 
-	r.Route("/auth", func(r chi.Router) {
-		r.Use(mw.JSONOnly)
-
-		r.Get("/", authCheck(cfg, store))
-		r.Post("/init", authInit(cfg, store))
-		r.Post("/login", authLogin(cfg, store))
-		// r.Post("/forget", s.authForget())
-		// r.Post("/reset/:token", s.authReset())
-	})
+	r.Route("/auth", auth.Router(cfg, store))
 
 	return r
 }
 
 // NewRouter api router
-func NewRouter(cfg *Config, db *sql.DB) chi.Router {
-	store := model.NewStore(db)
-	api := apiRouter(cfg, store)
+func NewRouter(cfg *config.Config, store Store) chi.Router {
+	api := router(cfg, store)
+
 	r := chi.NewRouter()
 
 	r.Use(middleware.RealIP)
@@ -55,7 +46,9 @@ func NewRouter(cfg *Config, db *sql.DB) chi.Router {
 	r.Get("/doc", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(docgen.JSONRoutesDoc(api)))
+		if _, err := w.Write([]byte(docgen.JSONRoutesDoc(api))); err != nil {
+			zap.L().Error(err.Error())
+		}
 	})
 
 	r.Mount("/", api)

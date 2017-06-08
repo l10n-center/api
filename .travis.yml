@@ -10,14 +10,17 @@ sudo: false
 
 before_install:
   - go get github.com/Masterminds/glide
+  - go get github.com/alecthomas/gometalinter
   - go get github.com/go-playground/overalls
   - go get github.com/mattn/goveralls
 
-before_script:
+install:
   - glide install
 
+before_script:
+  - gometalinter ./...
+
 script:
-  - go vet $(go list ./... | grep -v /vendor/)
   - overalls -project=github.com/l10n-center/api -- -race -v
 
 after_script:

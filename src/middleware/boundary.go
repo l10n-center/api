@@ -38,6 +38,8 @@ func init() {
 }
 
 // Boundary log start and end of request and store metrics of request
+//
+// Require tracing.WithSpan
 func Boundary(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

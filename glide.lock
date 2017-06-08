@@ -1,8 +1,8 @@
-hash: b632369920d10b7cdfb02d05983b14e9808cdc7ec83ead0f16309fa6f7a112f6
-updated: 2017-05-25T13:23:22.052970842+04:00
+hash: b12e3db6078c86f3522b4543d5ac064b1570292f07c6d02892c4a3568d6f1085
+updated: 2017-06-07T15:07:54.339809554+04:00
 imports:
 - name: github.com/apache/thrift
-  version: e41e47c2b4b2407bac525d203b281c63fb253978
+  version: 48ea3cde081b6343ceda2f1e3811887c1d11859b
   subpackages:
   - lib/go/thrift
 - name: github.com/asaskevich/govalidator
@@ -16,28 +16,9 @@ imports:
 - name: github.com/dgrijalva/jwt-go
   version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
 - name: github.com/golang/protobuf
-  version: 7a211bcf3bce0e3f1d74f9894916e6f116ae83b4
+  version: 5a0f697c9ed9d68fef0116532c6e05cfeae00e55
   subpackages:
   - proto
-- name: github.com/jmoiron/sqlx
-  version: d9bd385d68c068f1fabb5057e3dedcbcbb039d0f
-  subpackages:
-  - reflectx
-- name: github.com/lann/builder
-  version: f22ce00fd9394014049dad11c244859432bd6820
-- name: github.com/lann/ps
-  version: 62de8c46ede02a7675c4c79c84883eb164cb71e3
-- name: github.com/lib/pq
-  version: 2704adc878c21e1329f46f6e56a1c387d788ff94
-  subpackages:
-  - oid
-- name: github.com/mattes/migrate
-  version: 035c07716cd373d88456ec4d701402df52584cb4
-  subpackages:
-  - database
-  - database/postgres
-  - source
-  - source/file
 - name: github.com/matttproud/golang_protobuf_extensions
   version: c12348ce28de40eed0136aa2b644d0ee0650e56c
   subpackages:
@@ -73,6 +54,8 @@ imports:
   version: 65c1f6f8f0fc1e2185eb9863a3bc751496404259
   subpackages:
   - xfs
+- name: github.com/tomazk/envcfg
+  version: 75f014c534e7af8f7fbb738e2786c0b39233df31
 - name: github.com/uber/jaeger-client-go
   version: 465529424ed6b04a7fd2fcab6a9d6e96ea807fda
   subpackages:
@@ -102,7 +85,7 @@ imports:
   - internal/multierror
   - zapcore
 - name: golang.org/x/crypto
-  version: 7e9105388ebff089b3f99f0ef676ea55a6da3a7e
+  version: e7ba82683099cae71475961448ab8f903ea77c26
   subpackages:
   - bcrypt
   - blowfish
@@ -110,9 +93,15 @@ imports:
   version: 513929065c19401a1c7b76ecd942f9f86a0c061b
   subpackages:
   - context
-- name: gopkg.in/Masterminds/squirrel.v1
-  version: 20f192218cf52a73397fa2df45bdda720f3e47c8
+- name: gopkg.in/mgo.v2
+  version: 3f83fa5005286a7fe593b055f0d7771a7dce4655
+  subpackages:
+  - bson
 testImports:
+- name: github.com/golang/mock
+  version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
+  subpackages:
+  - gomock
 - name: github.com/stretchr/testify
   version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
   subpackages:

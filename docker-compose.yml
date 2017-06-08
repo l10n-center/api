@@ -1,10 +1,10 @@
 # This file used only for developing
 version: '2'
 services:
-  postgres:
-    image: postgres:9.6
+  mongo:
+    image: mongo:3.4
     ports:
-      - "5432:5432"
+      - "27017:27017"
 
   jaeger:
     image: jaegertracing/all-in-one:latest
